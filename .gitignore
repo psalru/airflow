@@ -3,5 +3,6 @@ airflow/dags/__pycache__
 airflow/logs/*
 airflow/*.pid
 docker/*
+logs/*
 !**/.gitkeep
 .env
