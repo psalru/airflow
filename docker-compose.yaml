@@ -59,8 +59,9 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-false}
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    AIRFLOW_VAR_S3_BUCKET: ${S3_BUCKET:-psal.private}
+    AIRFLOW_VAR_S3_HOSTNAME: ${S3_HOSTNAME:-local}
     # For future, to send emails
-    # AIRFLOW_VAR_HOSTNAME: ${AIRFLOW_HOSTNAME:-local}
     # AIRFLOW__SMTP__SMTP_HOST: ${SMTP_HOST:-}
     # AIRFLOW__SMTP__SMTP_STARTTLS: ${SMTP_STARTTLS:-False}
     # AIRFLOW__SMTP__SMTP_SSL: ${SMTP_SSL:-False}
