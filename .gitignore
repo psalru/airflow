@@ -1,0 +1,7 @@
+.idea/*
+airflow/dags/__pycache__
+airflow/logs/*
+airflow/*.pid
+docker/*
+!**/.gitkeep
+.env
