@@ -1,8 +1,9 @@
-INSERT INTO analytics_newsfeed (created_at, topic, keyword, date, domain, url, title, content, s3_bucket, s3_key)
+INSERT INTO analytics_newsfeed (created_at, hash, topic, keyword, date, domain, url, title, content, s3_bucket, s3_key)
 VALUES
     {% for item in items %}
         (
             '{{ item.created_at }}'::timestamp,
+            '{{ item.hash }}',
             '{{ item.topic }}',
             '{{ item.keyword }}',
             '{{ item.date }}'::date,
@@ -14,4 +15,4 @@ VALUES
             {% if item.s3_key %}'{{ item.s3_key }}'{% else %}null{% endif %}
         ){% if loop.nextitem is defined %},{% endif %}
     {% endfor %}
-;
+ON CONFLICT (hash) DO NOTHING;

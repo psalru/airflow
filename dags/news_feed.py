@@ -62,6 +62,7 @@ with DAG(
     def transform(feeds, **kwargs):
         import re
         import json
+        import hashlib
         import requests
         import warnings
         from bs4 import BeautifulSoup
@@ -74,6 +75,8 @@ with DAG(
             rss = s3.read_key(key=feed['s3_key'], bucket_name=s3_bucket)
             soup = BeautifulSoup(rss, features='lxml')
             entries = soup.find_all('entry')
+            topic = feed['topic']
+            keyword = feed['keyword']
 
             for j, entry in enumerate(entries):
                 url = entry.link['href'].strip()
@@ -116,8 +119,9 @@ with DAG(
 
                 news.append({
                     'created_at': str(kwargs['data_interval_end']),
-                    'topic': feed['topic'],
-                    'keyword': feed['keyword'],
+                    'hash': hashlib.md5((topic + keyword + url).encode('utf-8')).hexdigest(),
+                    'topic': topic,
+                    'keyword': keyword,
                     'date': pendulum.parse(entry.published.get_text()).to_date_string(),
                     'domain': domain,
                     'url': url,
