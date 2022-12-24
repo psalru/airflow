@@ -101,6 +101,8 @@ services:
       interval: 5s
       retries: 5
     restart: always
+    profiles:
+      - development
 
   redis:
     image: redis:latest
