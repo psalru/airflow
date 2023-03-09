@@ -30,8 +30,8 @@ with DAG(
         resp = requests.get(url)
 
         if resp.status_code == 200:
-            data_interval_end = kwargs['data_interval_end'].strftime('%Y-%m-%d-%H-%M')
-            s3_key_output = f"{s3_prefix}/{data_interval_end}/extracted.xml"
+            dt_str = kwargs['execution_date'].strftime('%Y-%m-%d-%H-%M-%S')
+            s3_key_output = f"{s3_prefix}/{dt_str}/extracted.xml"
             xml = resp.text
 
             s3.load_string(
@@ -52,8 +52,8 @@ with DAG(
         import pandas as pd
 
         file_name = f'transformed.json'
-        data_interval_end = kwargs['data_interval_end'].strftime('%Y-%m-%d-%H-%M')
-        s3_key_output = f"{s3_prefix}/{data_interval_end}/{file_name}"
+        dt_str = kwargs['execution_date'].strftime('%Y-%m-%d-%H-%M-%S')
+        s3_key_output = f"{s3_prefix}/{dt_str}/{file_name}"
         xml = s3.read_key(key=s3_key_input, bucket_name=s3_bucket)
         df = pd.read_xml(xml)
         df.columns = [x.lower() for x in df.columns]
@@ -76,7 +76,7 @@ with DAG(
 
 
     @task
-    def load(s3_key_input: str, **kwargs):
+    def load(s3_key_input: str):
         import json
         from jinja2 import Template
         from airflow.providers.postgres.hooks.postgres import PostgresHook
