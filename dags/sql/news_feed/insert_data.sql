@@ -1,4 +1,4 @@
-INSERT INTO analytics_newsfeed (created_at, hash, topic, keyword, date, domain, url, title, content, s3_bucket, s3_key)
+INSERT INTO google_alerts_newsfeed (created_at, hash, topic, keyword, date, domain, url, title, content, s3_bucket, s3_key)
 VALUES
     {% for item in items %}
         (
