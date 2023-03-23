@@ -161,9 +161,37 @@ with DAG(
 
         return len(items)
 
+    @task
+    def month_dump(loaded_count):
+        import io
+        import pandas as pd
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+        path_to_dumps = {
+            'xlsx': f'hosts/{s3_hostname}/dumps/{dag_id}_by_month.xlsx',
+            'csv': f'hosts/{s3_hostname}/dumps/{dag_id}_by_month.csv'
+        }
+
+        if loaded_count > 0:
+            postgres_hook = PostgresHook(postgres_conn_id='application')
+            conn = postgres_hook.get_conn()
+
+            df_by_month = pd.read_sql(open(f'dags/sql/{dag_id}/month_dump.sql', 'r').read(), conn)
+            df_by_month = df_by_month[list(filter(lambda x: x not in ['created_at', 'updated_at', 'deleted_at'], df_by_month.columns))]
+            s3.load_string(string_data=df_by_month.to_csv(sep='|'), key=path_to_dumps['csv'], bucket_name=s3_bucket, replace=True, encoding='utf-8')
+            xlsx_output = io.BytesIO()
+            xlsx_writer = pd.ExcelWriter(xlsx_output, engine='xlsxwriter')
+            df_by_month.to_excel(xlsx_writer)
+            xlsx_writer.save()
+            xlsx_data = xlsx_output.getvalue()
+            s3.load_bytes(bytes_data=xlsx_data, key=path_to_dumps['xlsx'], bucket_name=s3_bucket, replace=True)
+
+        return path_to_dumps
+
 
     extracted = extract()
     transformed = transform(extracted)
     loaded = load(transformed)
+    dumps = month_dump(loaded)
 
-    extracted >> transformed >> loaded
+    extracted >> transformed >> loaded >> dumps
