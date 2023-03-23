@@ -18,8 +18,10 @@ with vacancies as (
         v.schedule,
         v.employment,
         gfr.title as region,
-        v.s3_bucket,
-        v.s3_key
+        case
+            when v.s3_key is null then ''
+            else concat('https://storage.yandexcloud.net/', v.s3_bucket, '/', v.s3_key)
+        end as s3
     from hh_vacancy v
     join hh_hh_university hhu on hhu.id = v.hh_university_id
     join university_university uu on uu.id = hhu.university_id
@@ -38,6 +40,6 @@ with vacancies as (
 select
     id, university_one_monitoring_id, university_title, university_abbreviation, created_at, deleted_at, hh_id, url,
     initial_created_at, title, description, salary_from, salary_to, salary_gross, experience, schedule, employment,
-    region, skills, professional_roles, s3_bucket, s3_key from vacancies v
+    region, skills, professional_roles, s3 from vacancies v
 join skills s on s.vacancy_id = v.id
 join professional_roles pr on pr.vacancy_id = v.id;
