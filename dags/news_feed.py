@@ -149,12 +149,15 @@ with DAG(
         from airflow.providers.postgres.hooks.postgres import PostgresHook
 
         items = json.loads(s3.read_key(key=s3_key_input, bucket_name=s3_bucket))
-        postgres_hook = PostgresHook(postgres_conn_id='application')
+        items_count = len(items)
 
-        with open(f'dags/sql/{dag_id}/insert_data.sql', 'r') as sql_tpl:
-            sql = Template(sql_tpl.read()).render({'items': items})
+        if items_count > 0:
+            postgres_hook = PostgresHook(postgres_conn_id='application')
 
-        postgres_hook.run(sql)
+            with open(f'dags/sql/{dag_id}/insert_data.sql', 'r') as sql_tpl:
+                sql = Template(sql_tpl.read()).render({'items': items})
+
+            postgres_hook.run(sql)
 
         return len(items)
 
