@@ -29,7 +29,11 @@ with DAG(
         postgres_hook = PostgresHook(postgres_conn_id='application')
         conn = postgres_hook.get_conn()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('select id as hh_university_id, employer_id from hh_hh_university where deleted_at is null')
+        cursor.execute('''
+            select id as hh_university_id, employer_id 
+            from hh_hh_university 
+            where deleted_at is null and employer_id is not null
+        ''')
         university_list = cursor.fetchall()
 
         return university_list
