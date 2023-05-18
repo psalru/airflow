@@ -3,9 +3,6 @@ from airflow import DAG
 from airflow.models import Variable
 from airflow.decorators import task
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.providers.postgres.operators.postgres import PostgresOperator
-
-import warnings
 
 dag_id = 'rosrid_actives'
 
@@ -48,13 +45,12 @@ with DAG(
 
         data_interval_end = kwargs['data_interval_end']
         dt_str = data_interval_end.strftime('%Y-%m-%d-%H-%M-%S')
-        dt_minus_interval = data_interval_end.subtract(months=2)
+        dt_minus_interval = data_interval_end.subtract(months=3)
         start_date = dt_minus_interval.start_of('month').strftime('%Y-%m-%d')
         end_date = dt_minus_interval.end_of('month').strftime('%Y-%m-%d')
         s3_out_folder = f"{s3_prefix}/{dt_str}/actives"
 
-        # todo надо не забыть убрать ограничение
-        for u in university_list[:5]:
+        for u in university_list:
             rosrid_id = u['rosrid_id']
             university_id = u['university_id']
             rosrid_university_id = u['rosrid_university_id']
@@ -111,7 +107,9 @@ with DAG(
             for active_type, actives_by_type in university_actives['actives'].items():
                 for active in actives_by_type:
                     object_id = active['_id']
+                    active_date = active['_source']['last_status']['created_date']
                     active_title = active['_source']['name'].strip()
+                    active_url = f"https://rosrid.ru/{active_type[:-1]}/detail/{object_id}"
 
                     # Приводим типы активов к существующему справочнику
                     # НИОКТР применяется по умолчанию
@@ -138,8 +136,10 @@ with DAG(
                         'rosrid_university_id': rosrid_university_id,
                         'type_id': int(active_type_id),
                         'object_id': object_id,
+                        'date': active_date,
                         'title': active_title,
                         'oecd': [int(x) for x in oecd_list],
+                        'url': active_url,
                         's3_bucket': s3_bucket,
                         's3_key': actives_key,
                     })

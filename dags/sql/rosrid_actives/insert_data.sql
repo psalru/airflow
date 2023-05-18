@@ -1,11 +1,13 @@
 with new_active as (
-    insert into rosrid_active (created_at, rosrid_university_id, type_id, object_id, title, s3_bucket, s3_key)
+    insert into rosrid_active (created_at, rosrid_university_id, type_id, object_id, date, title, url, s3_bucket, s3_key)
     values (
                 current_timestamp,
                 {{ rosrid_university_id }},
                 {{ type_id }},
                 '{{ object_id }}',
+                '{{ date }}',
                 '{{ title }}',
+                '{{ url }}',
                 '{{ s3_bucket }}',
                 '{{ s3_key }}'
             )
