@@ -117,12 +117,14 @@ with DAG(
                     is_executor = False
 
                     if active_type == 'nioktrs':
-                        is_executor = active['_source']['executor']['ogrn'] == universities_ogrn
+                        is_executor = 'ogrn' in active['_source']['executor'].keys() and \
+                                      active['_source']['executor']['ogrn'] == universities_ogrn
                     elif active_type == 'rids':
                         executors_orgn = [x['ogrn'] for x in active['_source']['executors']]
                         is_executor = universities_ogrn in executors_orgn
                     elif active_type == 'dissertations':
-                        is_executor = active['_source']['author_organization']['ogrn'] == universities_ogrn
+                        is_executor = 'ogrn' in active['_source']['author_organization'].keys() and \
+                                      active['_source']['author_organization']['ogrn'] == universities_ogrn
 
                     # Приводим типы активов к существующему справочнику
                     # НИОКТР применяется по умолчанию
