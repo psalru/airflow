@@ -112,7 +112,6 @@ with DAG(
                 for active in actives_by_type:
                     object_id = active['_id']
                     active_title = active['_source']['name'].strip()
-                    keywords = [x['name'] for x in active['_source']['keyword_list']]
 
                     # Приводим типы активов к существующему справочнику
                     # НИОКТР применяется по умолчанию
@@ -141,7 +140,6 @@ with DAG(
                         'object_id': object_id,
                         'title': active_title,
                         'oecd': [int(x) for x in oecd_list],
-                        'keywords': keywords,
                         's3_bucket': s3_bucket,
                         's3_key': actives_key,
                     })
@@ -157,8 +155,47 @@ with DAG(
         return s3_key_output
 
 
+    @task
+    def soft_delete(s3_key_input):
+        import json
+        from jinja2 import Template
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+        actives_for_load = json.loads(s3.read_key(key=s3_key_input, bucket_name=s3_bucket))
+        actives_for_soft_delete = [f"'{x['object_id']}'" for x in actives_for_load]
+        postgres_hook = PostgresHook(postgres_conn_id='application')
+
+        with open(f'dags/sql/{dag_id}/soft_delete.sql', 'r') as sql_tpl:
+            sql_tpl = sql_tpl.read()
+
+        sql = Template(sql_tpl).render({'object_ids': actives_for_soft_delete})
+        postgres_hook.run(sql)
+
+        return len(actives_for_soft_delete)
+
+    @task
+    def load_actives(s3_key_input):
+        import json
+        from jinja2 import Template
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+        actives_for_load = json.loads(s3.read_key(key=s3_key_input, bucket_name=s3_bucket))
+        postgres_hook = PostgresHook(postgres_conn_id='application')
+
+        with open(f'dags/sql/{dag_id}/insert_data.sql', 'r') as sql_tpl:
+            sql_tpl = sql_tpl.read()
+
+        for a in actives_for_load:
+            sql = Template(sql_tpl).render(a)
+            postgres_hook.run(sql)
+
+        return len(actives_for_load)
+
+
     ex_ul = extract_university_list()
     ex_ua = extract_universities_actives(ex_ul)
     tr_ac = transform_actives(ex_ua)
+    sd = soft_delete(tr_ac)
+    l_ac = load_actives(tr_ac)
 
-    ex_ul >> ex_ua >> tr_ac
+    ex_ul >> ex_ua >> tr_ac >> sd >> l_ac
