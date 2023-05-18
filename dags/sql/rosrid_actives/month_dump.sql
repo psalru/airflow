@@ -10,6 +10,7 @@ select
     ra.title,
     o.oecd,
     ra.url,
+    ra.is_executor,
     concat('https://storage.yandexcloud.net/', ra.s3_bucket, '/', ra.s3_key) as s3
 from rosrid_active ra
 join rosrid_active_type rat on rat.id = ra.type_id

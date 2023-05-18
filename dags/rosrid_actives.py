@@ -30,9 +30,11 @@ with DAG(
         conn = postgres_hook.get_conn()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('''
-                select id as rosrid_university_id, university_id, rosrid_id as rosrid_id
-                from rosrid_rosrid_university
-                where deleted_at is null order by university_id
+                select rru.id as rosrid_university_id, rru.university_id, rru.rosrid_id as rosrid_id, uu.ogrn
+                from rosrid_rosrid_university rru
+                join university_university uu on uu.id = rru.university_id
+                where rru.deleted_at is null and uu.deleted_at is null
+                order by rru.university_id
             ''')
         university_list = cursor.fetchall()
 
@@ -52,15 +54,14 @@ with DAG(
 
         for u in university_list:
             rosrid_id = u['rosrid_id']
-            university_id = u['university_id']
-            rosrid_university_id = u['rosrid_university_id']
             data = get_data_by_id(rosrid_id, start_date, end_date)
 
             s3.load_string(
                 string_data=json.dumps({
                     'rosrid_id': rosrid_id,
-                    'university_id': university_id,
-                    'rosrid_university_id': rosrid_university_id,
+                    'university_id': u['university_id'],
+                    'university_ogrn': u['ogrn'],
+                    'rosrid_university_id': u['rosrid_university_id'],
                     'start_date': start_date,
                     'end_date': end_date,
                     'actives_count': sum([len(data[key]) for key in data.keys()]),
@@ -96,12 +97,11 @@ with DAG(
             where deleted_at is null
             order by title_short
         ''', engine, index_col='title_short')
-
-        actives_type_map = {'nioktrs': 1, 'rids': 2}
         result = []
 
         for actives_key in actives_list_keys:
             university_actives = json.loads(s3.read_key(bucket_name=s3_bucket, key=actives_key))
+            universities_ogrn = university_actives['university_ogrn']
             rosrid_university_id = university_actives['rosrid_university_id']
 
             for active_type, actives_by_type in university_actives['actives'].items():
@@ -110,6 +110,19 @@ with DAG(
                     active_date = active['_source']['last_status']['created_date']
                     active_title = active['_source']['name'].strip()
                     active_url = f"https://rosrid.ru/{active_type[:-1]}/detail/{object_id}"
+
+                    # Разбираемся, является ли актив университетским
+                    # В НИОКТР и РИД executor-ом должен быть университет
+                    # В Диссертациях author_organization должна быть университет
+                    is_executor = False
+
+                    if active_type == 'nioktrs':
+                        is_executor = active['_source']['executor']['ogrn'] == universities_ogrn
+                    elif active_type == 'rids':
+                        executors_orgn = [x['ogrn'] for x in active['_source']['executors']]
+                        is_executor = universities_ogrn in executors_orgn
+                    elif active_type == 'dissertations':
+                        is_executor = active['_source']['author_organization']['ogrn'] == universities_ogrn
 
                     # Приводим типы активов к существующему справочнику
                     # НИОКТР применяется по умолчанию
@@ -140,6 +153,7 @@ with DAG(
                         'title': active_title,
                         'oecd': [int(x) for x in oecd_list],
                         'url': active_url,
+                        'is_executor': is_executor,
                         's3_bucket': s3_bucket,
                         's3_key': actives_key,
                     })
