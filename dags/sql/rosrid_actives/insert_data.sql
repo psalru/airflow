@@ -6,9 +6,9 @@ with new_active as (
                 {{ type_id }},
                 '{{ object_id }}',
                 '{{ date }}',
-                '{{ title }}',
+                '{{ title | replace("'", "''") }}',
                 '{{ url }}',
-                {{ is_executor|lower }},
+                {{ is_executor | lower }},
                 '{{ s3_bucket }}',
                 '{{ s3_key }}'
             )
