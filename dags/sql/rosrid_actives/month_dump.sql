@@ -1,5 +1,6 @@
 select
     ra.id,
+    uu.id as university_id,
     uu.mon_id as university_one_monitoring_id,
     uu.title_short as university_title,
     uu.title_display as university_abbreviation,

@@ -1,6 +1,7 @@
 with vacancies as (
     select distinct on (hh_id)
         v.id as id,
+        uu.id as university_id,
         uu.mon_id as university_one_monitoring_id,
         uu.title_short as university_title,
         uu.title_display as university_abbreviation,
@@ -38,7 +39,7 @@ with vacancies as (
     group by v.id
 )
 select
-    id, university_one_monitoring_id, university_title, university_abbreviation, created_at, deleted_at, hh_id, url,
+    id, university_id, university_one_monitoring_id, university_title, university_abbreviation, created_at, deleted_at, hh_id, url,
     initial_created_at, title, description, salary_from, salary_to, salary_gross, experience, schedule, employment,
     region, skills, professional_roles, s3 from vacancies v
 join skills s on s.vacancy_id = v.id
